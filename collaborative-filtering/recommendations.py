@@ -73,3 +73,38 @@ def topMatches(preferences, person, n=5, similarity=sim_pearson):
     scores.sort()
     scores.reverse()
     return scores[0:n]
+
+
+def getRecommendations(preferences, person, similarity=sim_pearson):
+    totals = {}
+    simSums = {}
+    for other in preferences:
+        if other == person: continue
+        sim = similarity(preferences, person, other)
+
+        if sim <= 0: continue
+
+        for item in preferences[other]:
+            if item not in preferences[person] or preferences[person][item] == 0:
+                totals.setdefault(item, 0)
+                totals[item] += preferences[other][item] * sim
+                simSums.setdefault(item, 0)
+                simSums[item] += sim
+
+    rankings = [(total / simSums[item], item) for item, total in totals.items()]
+
+    rankings.sort()
+    rankings.reverse()
+
+    return rankings
+
+
+def transformPreferences(preferences):
+    result = {}
+    for person in preferences:
+        for item in preferences[person]:
+            result.setdefault(item, {})
+
+            result[item][person] = preferences[person][item]
+
+    return result
