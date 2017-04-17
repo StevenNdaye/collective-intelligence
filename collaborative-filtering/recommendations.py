@@ -65,3 +65,11 @@ def sim_pearson(preferences, person1, person2):
     return r
 
 
+def topMatches(preferences, person, n=5, similarity=sim_pearson):
+    scores = [(similarity(preferences, person, other), other)
+              for other in preferences if other != person
+              ]
+
+    scores.sort()
+    scores.reverse()
+    return scores[0:n]
