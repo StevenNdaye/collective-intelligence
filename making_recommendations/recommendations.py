@@ -148,3 +148,18 @@ def get_recommended_items(preferences, item_match, user):
     rankings.sort()
     rankings.reverse()
     return rankings
+
+
+def load_movie_lens(path='./data/movie_lens'):
+    movies = {}
+    for line in open(path + '/u.item'):
+        (id, title) = line.split('|')[0:2]
+        movies[id] = title
+
+    preferences = {}
+    for line in open(path + '/u.data'):
+        (user, movie_id, rating, ts) = line.split('\t')
+        preferences.setdefault(user, {})
+        preferences[user][movies[movie_id]] = float(rating)
+
+    return preferences
