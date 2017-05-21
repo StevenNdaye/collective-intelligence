@@ -27,7 +27,8 @@ def sim_distance(preferences, person1, person2):
         if item in preferences[person2]:
             si[item] = 1
     # if they have no ratings in common, return 0
-    if len(si) == 0: return 0
+    if len(si) == 0:
+        return 0
     # Add up the squares of all the differences
     sum_of_squares = sum([pow(preferences[person1][item] - preferences[person2][item], 2)
                           for item in preferences[person1] if item in preferences[person2]])
@@ -48,14 +49,15 @@ def sim_pearson(preferences, person1, person2):
     sum1 = sum([preferences[person1][it] for it in si])
     sum2 = sum([preferences[person2][it] for it in si])
 
-    sum1Sq = sum([pow(preferences[person1][it], 2) for it in si])
-    sum2Sq = sum([pow(preferences[person2][it], 2) for it in si])
+    sum1_sq = sum([pow(preferences[person1][it], 2) for it in si])
+    sum2_sq = sum([pow(preferences[person2][it], 2) for it in si])
 
-    pSum = sum([preferences[person1][it] * preferences[person2][it] for it in si])
+    p_sum = sum([preferences[person1][it] * preferences[person2][it]
+                 for it in si])
 
-    num = pSum - (sum1 * sum2 / n)
+    num = p_sum - (sum1 * sum2 / n)
 
-    den = sqrt((sum1Sq - pow(sum1, 2) / n) * (sum2Sq - pow(sum2, 2) / n))
+    den = sqrt((sum1_sq - pow(sum1, 2) / n) * (sum2_sq - pow(sum2, 2) / n))
 
     if den == 0:
         return 0
@@ -65,7 +67,7 @@ def sim_pearson(preferences, person1, person2):
     return r
 
 
-def topMatches(preferences, person, n=5, similarity=sim_pearson):
+def top_matches(preferences, person, n=5, similarity=sim_pearson):
     scores = [(similarity(preferences, person, other), other)
               for other in preferences if other != person
               ]
@@ -75,23 +77,26 @@ def topMatches(preferences, person, n=5, similarity=sim_pearson):
     return scores[0:n]
 
 
-def getRecommendations(preferences, person, similarity=sim_pearson):
+def get_recommendations(preferences, person, similarity=sim_pearson):
     totals = {}
-    simSums = {}
+    sim_sums = {}
     for other in preferences:
-        if other == person: continue
+        if other == person:
+            continue
         sim = similarity(preferences, person, other)
 
-        if sim <= 0: continue
+        if sim <= 0:
+            continue
 
         for item in preferences[other]:
             if item not in preferences[person] or preferences[person][item] == 0:
                 totals.setdefault(item, 0)
                 totals[item] += preferences[other][item] * sim
-                simSums.setdefault(item, 0)
-                simSums[item] += sim
+                sim_sums.setdefault(item, 0)
+                sim_sums[item] += sim
 
-    rankings = [(total / simSums[item], item) for item, total in totals.items()]
+    rankings = [(total / sim_sums[item], item)
+                for item, total in totals.items()]
 
     rankings.sort()
     rankings.reverse()
@@ -99,7 +104,7 @@ def getRecommendations(preferences, person, similarity=sim_pearson):
     return rankings
 
 
-def transformPreferences(preferences):
+def transform_preferences(preferences):
     result = {}
     for person in preferences:
         for item in preferences[person]:
@@ -108,3 +113,38 @@ def transformPreferences(preferences):
             result[item][person] = preferences[person][item]
 
     return result
+
+
+def calculate_similar_items(preferences, n=10):
+    result = {}
+
+    item_preferences = transform_preferences(preferences)
+    c = 0
+    for item in item_preferences:
+        c += 1
+        if c % 100 == 0: print "%d / %d" % (c, len(item_preferences))
+        scores = top_matches(item_preferences, item, n=n, similarity=sim_pearson)
+        result[item] = scores
+    return result
+
+
+def get_recommended_items(preferences, item_match, user):
+    user_ratings = preferences[user]
+    scores = {}
+    total_sim = {}
+
+    for (item, rating) in user_ratings.items():
+        for (similarity, item2) in item_match[item]:
+            if item2 in user_ratings: continue
+
+            scores.setdefault(item2, 0)
+            scores[item2] += similarity * rating
+
+            total_sim.setdefault(item2, 0)
+            total_sim[item2] += similarity
+
+    rankings = [(score / total_sim[item], item) for item, score in scores.items()]
+
+    rankings.sort()
+    rankings.reverse()
+    return rankings
